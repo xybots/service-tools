@@ -1,0 +1,11 @@
+{
+  "name": "@banzaicloud/service-tools-koa-example",
+  "main": "index.js",
+  "dependencies": {
+    "@banzaicloud/service-tools": "../../",
+    "@hapi/joi": "17.1.1",
+    "koa": "2.11.0",
+    "koa-router": "8.0.8",
+    "stoppable": "1.1.0"
+  }
+}

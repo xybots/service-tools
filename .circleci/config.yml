@@ -1,0 +1,61 @@
+defaults: &defaults
+  working_directory: ~/repo
+  docker:
+    - image: circleci/node:12
+
+version: 2
+jobs:
+  test:
+    <<: *defaults
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "package-lock.json" }}
+            # fallback to using the latest cache if no exact match is found
+            - v1-dependencies-
+      - run: npm ci
+      - save_cache:
+          paths:
+            - node_modules
+          key: v1-dependencies-{{ checksum "package-lock.json" }}
+      - run: npm test
+      - persist_to_workspace:
+          root: ~/repo
+          paths:
+            - .
+  publish:
+    <<: *defaults
+    steps:
+      - attach_workspace:
+          at: ~/repo
+      # NPM
+      - run:
+          name: Authenticate with registry
+          command: |
+            cat <<EOF >> .npmrc
+            //registry.npmjs.org/:_authToken=${NPM_TOKEN}
+            //npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
+            EOF
+      - run:
+          name: Publish package
+          command: |
+            npm publish
+            npm publish --registry=https://npm.pkg.github.com
+
+workflows:
+  version: 2
+  test-publish:
+    jobs:
+      - test:
+          filters:
+            tags:
+              only: /^v.*/
+      - publish:
+          requires:
+            - test
+          filters:
+            tags:
+              only: /^v.*/
+            branches:
+              ignore: /.*/
